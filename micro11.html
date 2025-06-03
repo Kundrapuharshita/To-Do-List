@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            background-image:"C:\Users\Harsh\OneDrive\Pictures\todo.jpg" ;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background-color: #e9ecef;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        li button {
+            background-color: #dc3545;
+        }
+        li button:hover {
+            background-color: #c82333;
+        }
+        .edit-mode input {
+            width: 70%;
+        }
+        .edit-mode button {
+            background-color: #007bff;
+        }
+        .edit-mode button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>To-Do List</h2>
+    <input type="text" id="taskInput" placeholder="Enter task">
+    <input type="datetime-local" id="taskTime">
+    <button onclick="addTask()">Add Task</button>
+    <ul id="taskList"></ul>
+</div>
+
+<script>
+    let tasks = [];
+    let audio = new Audio('https://www.soundjay.com/button/beep-07.wav');
+
+    function addTask() {
+        const taskInput = document.getElementById('taskInput');
+        const taskTime = document.getElementById('taskTime');
+        const taskName = taskInput.value.trim();
+        const taskDate = taskTime.value;
+
+        if (!taskName || !taskDate) {
+            alert('Please enter both task and time.');
+            return;
+        }
+
+        const taskId = Date.now();
+        const task = {
+            id: taskId,
+            name: taskName,
+            time: taskDate,
+            completed: false,
+            editing: false
+        };
+
+        tasks.push(task);
+        renderTasks();
+        setReminder(task);
+        taskInput.value = '';
+        taskTime.value = '';
+    }
+
+    function renderTasks() {
+        const taskList = document.getElementById('taskList');
+        taskList.innerHTML = '';
+
+        tasks.forEach(task => {
+            const li = document.createElement('li');
+            li.id = task.id;
+            li.classList.toggle('edit-mode', task.editing);
+            li.innerHTML = `
+                <span>${task.editing ? `<input type="text" value="${task.name}" id="editInput-${task.id}">` : task.name} - ${task.editing ? `<input type="datetime-local" value="${task.time}" id="editTime-${task.id}">` : new Date(task.time).toLocaleString()}</span>
+                <button onclick="deleteTask(${task.id})">Delete</button>
+                <button onclick="editTask(${task.id})">${task.editing ? 'Save' : 'Edit'}</button>
+            `;
+            taskList.appendChild(li);
+        });
+    }
+
+    function deleteTask(id) {
+        tasks = tasks.filter(task => task.id !== id);
+        renderTasks();
+    }
+
+    function editTask(id) {
+        const task = tasks.find(task => task.id === id);
+        if (!task) return;
+
+        if (task.editing) {
+            const editInput = document.getElementById(`editInput-${task.id}`);
+            const editTime = document.getElementById(`editTime-${task.id}`);
+            task.name = editInput.value.trim();
+            task.time = editTime.value;
+            task.editing = false;
+            setReminder(task);
+        } else {
+            task.editing = true;
+        }
+        renderTasks();
+    }
+
+    function setReminder(task) {
+        const taskTime = new Date(task.time).getTime();
+        const currentTime = Date.now();
+        const timeDifference = taskTime - currentTime;
+
+        if (timeDifference > 0) {
+            setTimeout(() => {
+                if (document.hidden) {
+            
+                    document.addEventListener('visibilitychange', function onVisibilityChange() {
+                        if (!document.hidden) {
+                            playReminder(task);
+                            document.removeEventListener('visibilitychange', onVisibilityChange);
+                        }
+                    });
+                } else {
+                
+                    playReminder(task);
+                }
+            }, timeDifference);
+        }
+    }
+
+    function playReminder(task) {
+        const utterance = new SpeechSynthesisUtterance(`Time to: ${task.name}`);
+        window.speechSynthesis.speak(utterance);
+        audio.play();
+    }
+</script>
+
+</body>
+</html>
